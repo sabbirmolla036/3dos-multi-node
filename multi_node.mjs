@@ -1,6 +1,6 @@
 import fs from 'fs';
 import axios from 'axios';
-import HttpsProxyAgent from 'https-proxy-agent';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import readline from 'readline';
 import chalk from 'chalk';
 
