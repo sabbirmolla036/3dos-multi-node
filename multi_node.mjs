@@ -1,19 +1,24 @@
-const fs = require('fs');
-const axios = require('axios');
-const HttpsProxyAgent = require('https-proxy-agent');
-const readline = require('readline');
-const chalk = require('chalk');
+import fs from 'fs';
+import axios from 'axios';
+import HttpsProxyAgent from 'https-proxy-agent';
+import readline from 'readline';
+import chalk from 'chalk';
 
 const BASE_API = 'https://api.dashboard.3dos.io/api';
+
+function readAccounts(filename) {
+    if (!fs.existsSync(filename)) return [];
+    try {
+        const data = fs.readFileSync(filename, 'utf-8');
+        return JSON.parse(data);
+    } catch {
+        return [];
+    }
+}
 
 function readLines(filename) {
     if (!fs.existsSync(filename)) return [];
     return fs.readFileSync(filename, 'utf-8').split('\n').map(l => l.trim()).filter(Boolean);
-}
-
-function parseAccount(line) {
-    const [email, password] = line.split(':');
-    return { email, password };
 }
 
 function getProxyAgent(proxy) {
@@ -96,18 +101,18 @@ async function runNode(nodeId, email, password, proxy) {
     }
 }
 
-(async () => {
-    const accounts = readLines('main_account.txt');
+async function main() {
+    const accounts = readAccounts('accounts.json');
     if (accounts.length === 0) {
-        console.log(chalk.red('No accounts found in main_account.txt'));
+        console.log(chalk.red('No accounts found in accounts.json'));
         process.exit(1);
     }
-    const { email, password } = parseAccount(accounts[0]);
+    const { Email: email, Password: password } = accounts[0];
     if (!email || !password) {
-        console.log(chalk.red('Invalid account format in main_account.txt'));
+        console.log(chalk.red('Invalid account format in accounts.json'));
         process.exit(1);
     }
-    const proxies = readLines('proxies.txt');
+    const proxies = readLines('proxy.txt');
     let maxNodes = 1;
     const maxAllowed = proxies.length > 0 ? proxies.length : 100;
     let input = await prompt(chalk.blue(`How many nodes to run in parallel? (1-${maxAllowed}): `));
@@ -120,4 +125,6 @@ async function runNode(nodeId, email, password, proxy) {
         await new Promise(r => setTimeout(r, 1000)); // Stagger start for stability
     }
     await Promise.all(tasks);
-})();
+}
+
+main();
